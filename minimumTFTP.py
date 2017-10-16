@@ -25,6 +25,8 @@ usage:
 ## put
 >>> tftpClient.put()
 ----------------------------------------------
+Client and Server also accept 'withIPv6 = True' keyword argument in constructor
+for using IPv6 sockets.
 """
 
 import socket
@@ -36,10 +38,14 @@ import threading
 import sys
 
 class Server:
-    def __init__(self, dPath):
+    def __init__(self, dPath, withIPv6 = False):
         global serverDir, serverLocalSocket, remoteDict
+        self.withIPv6 = withIPv6
         serverDir = dPath
-        serverLocalSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if self.withIPv6:
+            serverLocalSocket = socket.socket(socket.AF_INET6,socket.SOCK_DGRAM)
+        else:
+            serverLocalSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         serverLocalSocket.bind(('', 69))
         remoteDict = {}
 
@@ -320,12 +326,16 @@ class packetProcess:
 
 
 class Client:
-    def __init__(self, serverIP, clientDir, fileName):
+    def __init__(self, serverIP, clientDir, fileName, withIPv6 = False):
         self.serverIP = serverIP
         self.filePath = os.path.join(clientDir, fileName)
         self.fileName = fileName
+        self.withIPv6 = withIPv6
 
-        self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if self.withIPv6:
+            self.clientSocket = socket.socket(socket.AF_INET6,socket.SOCK_DGRAM)
+        else:
+            self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.clientSocket.settimeout(5)
 
     def get(self):
@@ -574,30 +584,38 @@ def test():
 
     client put
         Usage: python -m minimumTFTP -p [serverIP] [directory] [filename]
+
+    The option '-6' can be added anywhere on command line to use IPv6.
     '''
 
-    if '-s' in sys.argv:
+    argList = sys.argv[:]
+    withIPv6 = False
+    if '-6' in argList:
+        argList.remove('-6')
+        withIPv6 = True
+
+    if '-s' in argList:
         try:
-            Server(sys.argv[2]).run()
+            Server(argList[2], withIPv6=withIPv6).run()
         except:
             print(sys.exc_info()[0])
             raise
 
-    elif '-g' in sys.argv:
+    elif '-g' in argList:
         try:
-            Client(sys.argv[2], sys.argv[3], sys.argv[4]).get()
+            Client(argList[2], argList[3], argList[4], withIPv6=withIPv6).get()
         except:
             print(sys.exc_info()[0])
             raise
 
-    elif '-p' in sys.argv:
+    elif '-p' in argList:
         try:
-            Client(sys.argv[2], sys.argv[3], sys.argv[4]).put()
+            Client(argList[2], argList[3], argList[4], withIPv6=withIPv6).put()
         except:
             print(sys.exc_info()[0])
             raise
 
-    elif 'help' in sys.argv:
+    elif 'help' in argList:
         print(test.__doc__)
         sys.exit(0)
 
