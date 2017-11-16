@@ -44,6 +44,7 @@ class Server:
         remoteDict = {}
 
     def run(self):
+        print ("minimumTFTP Server PID: %i" % os.getpid())
         while True:
 
             try:
